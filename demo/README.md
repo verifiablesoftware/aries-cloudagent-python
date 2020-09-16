@@ -22,6 +22,7 @@ There are several demos available for ACA-Py mostly (but not only) aimed at deve
 - [OpenAPI (Swagger) Demo](#openapi-swagger-demo)
 - [Performance Demo](#performance-demo)
 - [Coding Challenge: Adding ACME](#coding-challenge-adding-acme)
+- [VSW Demo](#vsw-demo)
 
 ## The IIWBook Demo
 
@@ -206,3 +207,58 @@ The framework for the code is in the [acme.py](runners/acme.py) file, but the co
 * Start another terminal session and run the same commands as for "Alice", but replace "alice" with "acme".
 
 All done? Checkout how we added the missing code segments [here](AcmeDemoWorkshop.md).
+
+## VSW Demo
+
+This demo demonstrates a simple interaction between a developer and a repository. To run it locally, first, run the [von-network](https://github.com/bcgov/von-network) in one terminal:
+
+```
+cd von-network
+./manage build
+./manage start
+```
+
+In the next terminal, run the repo agent:
+
+```
+cd aries-cloudagent-python/demo
+./run_demo repo
+```
+
+Note the repo's public DID from the terminal output for the next step:
+
+```
+Repo       | ::::::::::::::::::::::::::::::::::::::::::::::
+Repo       | :: Repo.Agent                               ::
+Repo       | ::                                          ::
+Repo       | ::                                          ::
+Repo       | :: Inbound Transports:                      ::
+Repo       | ::                                          ::
+Repo       | ::   - http://0.0.0.0:8060                  ::
+Repo       | ::                                          ::
+Repo       | :: Outbound Transports:                     ::
+Repo       | ::                                          ::
+Repo       | ::   - http                                 ::
+Repo       | ::   - https                                ::
+Repo       | ::                                          ::
+Repo       | :: Public DID Information:                  ::
+Repo       | ::                                          ::
+Repo       | ::   - DID: Y6LVmVTo4Bm1HU2E8PCSbx          ::
+Repo       | ::                                          ::
+Repo       | :: Administration API:                      ::
+Repo       | ::                                          ::
+Repo       | ::   - http://0.0.0.0:8061                  ::
+Repo       | ::                                          ::
+Repo       | ::                               ver: 0.5.3 ::
+Repo       | ::::::::::::::::::::::::::::::::::::::::::::::
+```
+
+In a third terminal, run the vsw agent. You will pass to this command the URL of the file, the expected SHA of that file, and the public DID of the repo agent (from the second terminal):
+
+```
+./run_demo vsw https://gist.github.com/fw-brice/fdd7ebec8a4a4c8cc09119ed9080a2d4/raw/8b70233c84552e19a2efac9b697f5bbd2f52c6a6/hello.wasm \
+  --sha=3130e82b5ce392bd97cb3d8600bd66c6bbd6fe607d054ed1aed91da68d27194d \
+  --repo=Y6LVmVTo4Bm1HU2E8PCSbx
+```
+
+This tool will download the file from the given URL, verify that its SHA matches the one given, then connects to the repo and issues a credential about that file.

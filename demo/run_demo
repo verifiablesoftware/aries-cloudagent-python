@@ -99,7 +99,7 @@ do
 Usage:
    ./demo_run <agent> [OPTIONS]
 
-   - <agent> is one of alice, faber, acme, performance.
+   - <agent> is one of alice, faber, acme, performance, vsw, repo.
    - Options:
       --events - display on the terminal the webhook events from the ACA-Py agent.
       --timing - at the end of the run, display timing; relevant to the "performance" agent.
@@ -133,8 +133,16 @@ elif [ "$AGENT" = "performance" ]; then
   AGENT_MODULE="performance"
   AGENT_PORT=8030
   AGENT_PORT_RANGE=8030-8038
+elif [ "$AGENT" = "vsw" ]; then
+  AGENT_MODULE="vsw"
+  AGENT_PORT=8050
+  AGENT_PORT_RANGE=8050-8057
+elif [ "$AGENT" = "repo" ]; then
+  AGENT_MODULE="repo"
+  AGENT_PORT=8060
+  AGENT_PORT_RANGE=8060-8067
 else
-  echo "Please specify which agent you want to run. Choose from 'faber', 'alice', 'acme', or 'performance'."
+  echo "Please specify which agent you want to run. Choose from 'faber', 'alice', 'acme', 'performance', 'vsw', or 'repo'."
   exit 1
 fi
 
