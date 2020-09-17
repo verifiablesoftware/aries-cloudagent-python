@@ -151,6 +151,7 @@ class VSWAgent(DemoAgent):
     async def handle_basicmessages(self, message):
         self.log("Received message:", message["content"])
 
+
 async def input_invitation(agent):
     async for details in prompt_loop("Repo invite details: "):
         b64_invite = None
@@ -191,12 +192,13 @@ async def input_invitation(agent):
 
         await agent.detect_connection()
 
+
 async def register_creddef(
-        agent,
-        schema_id,
-        support_revocation: bool = False,
-        revocation_registry_size: int = None,
-    ):
+    agent,
+    schema_id,
+    support_revocation: bool = False,
+    revocation_registry_size: int = None,
+):
     # Create a cred def for the schema
     credential_definition_body = {
         "schema_id": schema_id,
@@ -212,22 +214,27 @@ async def register_creddef(
     log_msg("Cred def ID:", credential_definition_id)
     return credential_definition_id
 
+
 async def main(
+    name: str,
     start_port: int,
-    url: str,
-    repo_did: str,
     revocation: bool = False,
     tails_server_base_url: str = None,
     show_timing: bool = False,
-    sha: str = None,
 ):
+
+    with open('/home/indy/vsw/.config.json') as f:
+        config = json.load(f)
+
+    url = await prompt("URL: ")
+    digest = await prompt("Digest: ")
 
     response = requests.get(url, allow_redirects=True)
     if response.status_code != 200:
         print("Failed to download file from URL")
         sys.exit(1)
-    computed = hashlib.sha256(response.content).hexdigest();
-    if computed != sha:
+    computed = hashlib.sha256(response.content).hexdigest()
+    if computed != digest:
         print("SHA does not match")
         print(computed)
         sys.exit(1)
@@ -258,8 +265,12 @@ async def main(
         log_msg("Endpoint URL is at:", agent.endpoint)
 
         # Connect to repo
-        log_status("#9 Input repo invitation details")
-        await input_invitation(agent)
+        log_status("#9 Connect to repo")
+        connection = await agent.admin_POST("/connections/receive-invitation", config['invitation'])
+        agent.connection_id = connection["connection_id"]
+        log_json(connection, label="Invitation response:")
+
+        await agent.detect_connection()
 
         log_status("#13 Issue credential offer to repo")
 
@@ -267,14 +278,15 @@ async def main(
             log_status("* Create a new cred def on the ledger")
             credential_definition_id = await register_creddef(
                 agent,
-                f"{repo_did}:2:vsw schema:0.1",
+                f"{config['repo']}:2:vsw schema:0.2",
                 support_revocation=revocation,
                 revocation_registry_size=TAILS_FILE_COUNT,
             )
 
         agent.cred_attrs[credential_definition_id] = {
+            "name": name,
             "url": url,
-            "digest": sha,
+            "digest": digest,
             "timestamp": str(int(time.time())),
         }
 
@@ -339,9 +351,7 @@ if __name__ == "__main__":
         "--timing", action="store_true", help="Enable timing information"
     )
 
-    parser.add_argument("--repo", type=str, metavar="<public-DID-of-repo>")
-    parser.add_argument("--sha", type=str, metavar="<expected-sha256>")
-    parser.add_argument("url", type=str, help="URL where this file can be accessed")
+    parser.add_argument("name", type=str, help="App name to be published")
 
     args = parser.parse_args()
 
@@ -385,13 +395,11 @@ if __name__ == "__main__":
     try:
         asyncio.get_event_loop().run_until_complete(
             main(
+                args.name,
                 args.port,
-                args.url,
-                args.repo,
                 args.revocation,
                 tails_server_base_url,
                 args.timing,
-                args.sha,
             )
         )
     except KeyboardInterrupt:

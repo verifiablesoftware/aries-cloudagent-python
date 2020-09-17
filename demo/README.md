@@ -23,6 +23,10 @@ There are several demos available for ACA-Py mostly (but not only) aimed at deve
 - [Performance Demo](#performance-demo)
 - [Coding Challenge: Adding ACME](#coding-challenge-adding-acme)
 - [VSW Demo](#vsw-demo)
+  - [Von-Network](#von-network)
+  - [Repository](#repository)
+  - [Developer](#developer)
+  - [User](#user)
 
 ## The IIWBook Demo
 
@@ -210,13 +214,19 @@ All done? Checkout how we added the missing code segments [here](AcmeDemoWorksho
 
 ## VSW Demo
 
-This demo demonstrates a simple interaction between a developer and a repository. To run it locally, first, run the [von-network](https://github.com/bcgov/von-network) in one terminal:
+This demo demonstrates a simple interaction between a developer and a repository. 
+
+### Von-Network
+
+This demo runs on top of the [Von Network](https://github.com/bcgov/von-network). To run a local instance of this network:
 
 ```
 cd von-network
 ./manage build
 ./manage start
 ```
+
+### Repository
 
 In the next terminal, run the repo agent:
 
@@ -225,7 +235,7 @@ cd aries-cloudagent-python/demo
 ./run_demo repo
 ```
 
-Note the repo's public DID from the terminal output for the next step:
+Note the repo's public DID from the terminal output which will be used by the developer and user:
 
 ```
 Repo       | ::::::::::::::::::::::::::::::::::::::::::::::
@@ -253,12 +263,72 @@ Repo       | ::                               ver: 0.5.3 ::
 Repo       | ::::::::::::::::::::::::::::::::::::::::::::::
 ```
 
-In a third terminal, run the vsw agent. You will pass to this command the URL of the file, the expected SHA of that file, and the public DID of the repo agent (from the second terminal):
+Also make note of the invitation json in that output, which will also be needed by the developer and user:
 
 ```
-./run_demo vsw https://gist.github.com/fw-brice/fdd7ebec8a4a4c8cc09119ed9080a2d4/raw/8b70233c84552e19a2efac9b697f5bbd2f52c6a6/hello.wasm \
-  --sha=3130e82b5ce392bd97cb3d8600bd66c6bbd6fe607d054ed1aed91da68d27194d \
-  --repo=Y6LVmVTo4Bm1HU2E8PCSbx
+Use the following JSON to accept the invite from another demo agent. Or use the QR code to connect from a mobile agent.
+Invitation Data:
+{"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation", "@id": "e4e42b3d-dd1f-4280-9407-408c692d8d6b", "label": "Repo.Agent", "recipientKeys": ["F9JG4wEisC4KX4utxDBQtP5XD449XVYUSt5Bd2e5yPQe"], "serviceEndpoint": "http://192.168.65.3:8060"}
 ```
 
-This tool will download the file from the given URL, verify that its SHA matches the one given, then connects to the repo and issues a credential about that file.
+Create a file in *~/vsw/* named *.config.json*:
+
+```json
+{
+  "repo": "Y6LVmVTo4Bm1HU2E8PCSbx",
+  "invitation": {"@type": "did:sov:BzCbsNYhMrjHiqZDTUASHg;spec/connections/1.0/invitation", "@id": "e4e42b3d-dd1f-4280-9407-408c692d8d6b", "label": "Repo.Agent", "recipientKeys": ["F9JG4wEisC4KX4utxDBQtP5XD449XVYUSt5Bd2e5yPQe"], "serviceEndpoint": "http://192.168.65.3:8060"}
+}
+```
+
+Other configuration details will go in here later, but this is all we need for now.
+
+
+### Developer
+
+The third terminal will represent the developer that wishes to publish an app to the repository. First, the file should be available online, be sure to have the URL available. Second, calculate the expected SHA-2 digest for the file:
+
+```
+shasum -a 256 hello.wasm
+```
+
+Now, run the VSW tool, passing the name of your app, "*hello*", as a parameter:
+
+```
+./run_demo vsw hello
+```
+
+This tool will first check for the `~/vsw/.config.json` configuration file to get the DID of the repo. If you have not defined that, it will fail. Next, it will prompt you for the URL and the digest for the file. It will download the file from the specified URL, and verify that its digest matches the one specified. If the digest matches, it will then connect to the repo to issue a credential about that file.
+
+Once connected to the repo, the tool is issuing a credential with the information that you passed it (name, url, digest). You can see the credentials stored in the repo by visiting http://localhost:8061/api/doc#/credentials/get_credentials, clicking the "Try it out" button, then the "Execute" button. You should see the credential in the repo's wallet:
+
+```
+{
+  "results": [
+    {
+      "referent": "0ba02f45-32fe-4917-a71f-e620402113d3",
+      "attrs": {
+        "name": "hello",
+        "digest": "3130e82b5ce392bd97cb3d8600bd66c6bbd6fe607d054ed1aed91da68d27194d",
+        "url": "https://gist.github.com/fw-brice/fdd7ebec8a4a4c8cc09119ed9080a2d4/raw/8b70233c84552e19a2efac9b697f5bbd2f52c6a6/hello.wasm",
+        "timestamp": "1600284285"
+      },
+      "schema_id": "Y6LVmVTo4Bm1HU2E8PCSbx:2:vsw schema:0.2",
+      "cred_def_id": "7YceaoXPUu8oEPKz3ijNDV:3:CL:159:default",
+      "rev_reg_id": null,
+      "cred_rev_id": null
+    }
+  ]
+}
+```
+
+### User
+
+The fourth terminal will represent a user that wants to install an app from the repository. Run the tool, passing the name of the app to install:
+
+```
+./run_demo vsw_user hello
+```
+
+This tool will first check for the `~/vsw/.config.json` configuration file, just like the developer's tool did, to get the DID of the repo and the invitation to connect to it. If you have not defined that, it will fail. It will then connect to the repo.
+
+Once connected, the user tool will issue a proof request to the repo for an app with the name 'hello' in this case. The repo responds with a presentation of the credential, which the user tool then uses to download the file and verify its digest. If the download and digest comparison are successful, you will see `SUCCESS` in the output and should find the file, *hello.wasm*, in *~/vsw/*.

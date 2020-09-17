@@ -121,8 +121,9 @@ class RepoAgent(DemoAgent):
 
     async def handle_present_proof(self, message):
         state = message["state"]
-
         presentation_exchange_id = message["presentation_exchange_id"]
+        presentation_request = message["presentation_request"]
+
         self.log(
             "Presentation: state =",
             state,
@@ -130,13 +131,65 @@ class RepoAgent(DemoAgent):
             presentation_exchange_id,
         )
 
-        if state == "presentation_received":
-            log_status("#27 Process the proof provided by X")
-            log_status("#28 Check if proof is valid")
-            proof = await self.admin_POST(
-                f"/present-proof/records/{presentation_exchange_id}/verify-presentation"
+        if state == "request_received":
+            log_status(
+                "#24 Query for credentials in the wallet that satisfy the proof request"
             )
-            self.log("Proof =", proof["verified"])
+
+            # include self-attested attributes (not included in credentials)
+            credentials_by_reft = {}
+            revealed = {}
+            self_attested = {}
+            predicates = {}
+
+            # select credentials to provide for the proof
+            credentials = await self.admin_GET(
+                f"/present-proof/records/{presentation_exchange_id}/credentials"
+            )
+            if credentials:
+                for row in sorted(
+                    credentials,
+                    key=lambda c: int(c["cred_info"]["attrs"]["timestamp"]),
+                    reverse=True,
+                ):
+                    for referent in row["presentation_referents"]:
+                        if referent not in credentials_by_reft:
+                            credentials_by_reft[referent] = row
+
+            for referent in presentation_request["requested_attributes"]:
+                if referent in credentials_by_reft:
+                    revealed[referent] = {
+                        "cred_id": credentials_by_reft[referent]["cred_info"][
+                            "referent"
+                        ],
+                        "revealed": True,
+                    }
+                else:
+                    self_attested[referent] = "my self-attested value"
+
+            for referent in presentation_request["requested_predicates"]:
+                if referent in credentials_by_reft:
+                    predicates[referent] = {
+                        "cred_id": credentials_by_reft[referent]["cred_info"][
+                            "referent"
+                        ]
+                    }
+
+            log_status("#25 Generate the proof")
+            request = {
+                "requested_predicates": predicates,
+                "requested_attributes": revealed,
+                "self_attested_attributes": self_attested,
+            }
+
+            log_status("#26 Send the proof to X")
+            await self.admin_POST(
+                (
+                    "/present-proof/records/"
+                    f"{presentation_exchange_id}/send-presentation"
+                ),
+                request,
+            )
 
     async def handle_basicmessages(self, message):
         self.log("Received message:", message["content"])
@@ -183,8 +236,8 @@ async def main(
                 credential_definition_id,
             ) = await agent.register_schema_and_creddef(
                 "vsw schema",
-                "0.1",
-                ["url", "digest", "timestamp"],
+                "0.2",
+                ["name", "url", "digest", "timestamp"],
                 support_revocation=revocation,
                 revocation_registry_size=TAILS_FILE_COUNT,
             )
@@ -196,7 +249,9 @@ async def main(
             log_status(
                 "#7 Create a connection to alice and print out the invite details"
             )
-            connection = await agent.admin_POST("/connections/create-invitation")
+            # connection = await agent.admin_POST("/connections/create-invitation")
+            # connection = await agent.admin_POST("/connections/create-invitation?multi_use=true&public=true")
+            connection = await agent.admin_POST("/connections/create-invitation?multi_use=true")
 
         agent.connection_id = connection["connection_id"]
 
