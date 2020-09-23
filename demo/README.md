@@ -226,6 +226,8 @@ cd von-network
 ./manage start
 ```
 
+Alternatively, you may prepend all of the `./run_demo ...` commands below with `LEDGER_URL=http://dev.greenlight.bcovrin.vonx.io `, to run on the test network available at that URL.
+
 ### Repository
 
 In the next terminal, run the repo agent:
