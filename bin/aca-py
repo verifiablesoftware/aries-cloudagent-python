@@ -37,7 +37,7 @@ if ENABLE_PYDEVD_PYCHARM or "--debug-pycharm" in sys.argv:
         print("pydevd_pycharm library was not found")
 
 
-from aries_cloudagent.commands import run_command  # noqa
+from aries_cloudagent_vsw.commands import run_command  # noqa
 
 if len(sys.argv) > 1 and sys.argv[1] and sys.argv[1][0] != "-":
     command = sys.argv[1]

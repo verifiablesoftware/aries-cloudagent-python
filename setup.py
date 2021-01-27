@@ -4,7 +4,7 @@ import os
 import runpy
 from setuptools import setup, find_packages
 
-PACKAGE_NAME = "aries_cloudagent"
+PACKAGE_NAME = "aries_cloudagent_vsw"
 version_meta = runpy.run_path("./{}/version.py".format(PACKAGE_NAME))
 VERSION = version_meta["__version__"]
 
@@ -28,7 +28,7 @@ if __name__ == "__main__":
         url="https://github.com/hyperledger/aries-cloudagent-python",
         packages=find_packages(),
         include_package_data=True,
-        package_data={"aries_cloudagent": ["requirements.txt"]},
+        package_data={"aries_cloudagent_vsw": ["requirements.txt"]},
         install_requires=parse_requirements("requirements.txt"),
         tests_require=parse_requirements("requirements.dev.txt"),
         extras_require={

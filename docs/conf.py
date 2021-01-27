@@ -29,15 +29,15 @@ autodoc_mock_imports = [
     "asynctest",
     "markdown",
     "prompt_toolkit",
-    "aries_cloudagent.base_handler",
-    "aries_cloudagent.logging",
+    "aries_cloudagent_vsw.base_handler",
+    "aries_cloudagent_vsw.logging",
 ]
 
-#    "aries_cloudagent.tests.test_conductor",
-#    "aries_cloudagent.tests.test_init",
-#    "aries_cloudagent.messaging.connections.tests",
-#    "aries_cloudagent.messaging.connections.messages.tests",
-#    "aries_cloudagent.messaging.introduction.messages.tests"
+#    "aries_cloudagent_vsw.tests.test_conductor",
+#    "aries_cloudagent_vsw.tests.test_init",
+#    "aries_cloudagent_vsw.messaging.connections.tests",
+#    "aries_cloudagent_vsw.messaging.connections.messages.tests",
+#    "aries_cloudagent_vsw.messaging.introduction.messages.tests"
 
 
 # -- Project information -----------------------------------------------------
