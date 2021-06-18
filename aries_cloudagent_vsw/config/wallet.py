@@ -2,6 +2,8 @@
 
 import logging
 
+import requests
+
 from ..wallet.base import BaseWallet
 from ..wallet.crypto import seed_to_did
 
@@ -67,7 +69,14 @@ async def wallet_config(context: InjectionContext, provision: bool = False):
             if provision:
                 print(f"Created new public DID: {public_did}")
                 print(f"Verkey: {public_did_info.verkey}")
+
             # wait until ledger config to set public DID endpoint - wallet goes first
+            requests.post("https://selfserve.sovrin.org/nym", json={
+                "network": "buildernet",
+                "did": public_did,
+                "verkey": public_did_info.verkey,
+                "paymentaddr": ""
+            })
 
     if provision and not wallet_local_did and not public_did:
         print("No public DID")
